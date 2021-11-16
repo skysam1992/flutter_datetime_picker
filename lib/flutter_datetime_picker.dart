@@ -439,7 +439,7 @@ class _DatePickerState extends State<_DatePickerComponent> {
               style: theme.itemStyle,
             ),
             Container(
-              child: widget.pickerModel.layoutProportions()[1] > 0
+              child: widget.pickerModel.layoutProportions()[1] > 0 && widget.pickerModel.rightStringAtIndex(0) != null
                   ? _renderColumnView(
                       ValueKey(widget.pickerModel.currentLeftIndex()),
                       theme,
@@ -456,11 +456,11 @@ class _DatePickerState extends State<_DatePickerComponent> {
                   : null,
             ),
             Text(
-              widget.pickerModel.rightDivider(),
+              widget.pickerModel.rightStringAtIndex(0) == null ? '' : widget.pickerModel.rightDivider(),
               style: theme.itemStyle,
             ),
             Container(
-              child: widget.pickerModel.layoutProportions()[2] > 0
+              child: widget.pickerModel.layoutProportions()[2] > 0 && widget.pickerModel.rightStringAtIndex(0) != null
                   ? _renderColumnView(
                       ValueKey(widget.pickerModel.currentMiddleIndex() * 100 +
                           widget.pickerModel.currentLeftIndex()),
