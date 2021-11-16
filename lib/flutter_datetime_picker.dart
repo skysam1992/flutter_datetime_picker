@@ -139,7 +139,6 @@ class DatePicker {
     DateTime? currentTime,
     DatePickerTheme? theme,
     String? vacancyLab,
-    DateTime? vacancyTime,
   }) async {
     return await Navigator.push(
       context,
@@ -158,7 +157,6 @@ class DatePicker {
           maxTime: maxTime,
           locale: locale,
           vacancyLab: vacancyLab,
-          vacancyTime: vacancyTime,
         ),
       ),
     );

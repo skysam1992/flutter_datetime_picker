@@ -526,10 +526,8 @@ class DateTimePickerModel extends CommonPickerModel {
     DateTime? maxTime,
     DateTime? minTime,
     LocaleType? locale,
-    DateTime? vacancyTime,
     String? vacancyLab,
   }) : super(locale: locale) {
-    this.vacancyTime = vacancyTime;
     this.vacancyLab = vacancyLab;
     if (currentTime != null) {
       this.currentTime = currentTime;
@@ -539,8 +537,12 @@ class DateTimePickerModel extends CommonPickerModel {
         this.maxTime = maxTime;
       }
 
-      if (vacancyTime != null) {
+      if (vacancyLab != null && minTime != null) {
         this.minTime = minTime;
+        this.vacancyTime = minTime.add(Duration(days: -1));
+        if (this.currentTime.difference(minTime).inMilliseconds < 0) {
+          this.currentTime = this.vacancyTime!;
+        }
       } else {
         if (minTime != null &&
             (currentTime.isAfter(minTime) ||
@@ -570,7 +572,7 @@ class DateTimePickerModel extends CommonPickerModel {
       this.maxTime = null;
     }
 
-    if (vacancyTime != null && isAtSameDay(currentTime, vacancyTime)) {
+    if (this.vacancyTime != null && isAtSameDay(this.currentTime, this.vacancyTime)) {
       _currentLeftIndex = 0;
       _currentMiddleIndex = 0;
       _currentRightIndex = 0;
