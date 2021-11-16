@@ -383,7 +383,7 @@ class TimePickerModel extends CommonPickerModel {
 
     _currentLeftIndex = this.currentTime.hour;
     _currentMiddleIndex = this.currentTime.minute;
-    _currentRightIndex = this.currentTime.second;
+    _currentRightIndex = this.showSecondsColumn ? this.currentTime.second : 0;
   }
 
   @override
@@ -518,13 +518,19 @@ class Time12hPickerModel extends CommonPickerModel {
 class DateTimePickerModel extends CommonPickerModel {
   DateTime? maxTime;
   DateTime? minTime;
+  DateTime? vacancyTime;
+  String? vacancyLab;
 
-  DateTimePickerModel(
-      {DateTime? currentTime,
-      DateTime? maxTime,
-      DateTime? minTime,
-      LocaleType? locale})
-      : super(locale: locale) {
+  DateTimePickerModel({
+    DateTime? currentTime,
+    DateTime? maxTime,
+    DateTime? minTime,
+    LocaleType? locale,
+    DateTime? vacancyTime,
+    String? vacancyLab,
+  }) : super(locale: locale) {
+    this.vacancyTime = vacancyTime;
+    this.vacancyLab = vacancyLab;
     if (currentTime != null) {
       this.currentTime = currentTime;
       if (maxTime != null &&
@@ -532,11 +538,17 @@ class DateTimePickerModel extends CommonPickerModel {
               currentTime.isAtSameMomentAs(maxTime))) {
         this.maxTime = maxTime;
       }
-      if (minTime != null &&
-          (currentTime.isAfter(minTime) ||
-              currentTime.isAtSameMomentAs(minTime))) {
+
+      if (vacancyTime != null) {
         this.minTime = minTime;
+      } else {
+        if (minTime != null &&
+            (currentTime.isAfter(minTime) ||
+                currentTime.isAtSameMomentAs(minTime))) {
+          this.minTime = minTime;
+        }
       }
+
     } else {
       this.maxTime = maxTime;
       this.minTime = minTime;
@@ -558,13 +570,19 @@ class DateTimePickerModel extends CommonPickerModel {
       this.maxTime = null;
     }
 
-    _currentLeftIndex = 0;
-    _currentMiddleIndex = this.currentTime.hour;
-    _currentRightIndex = this.currentTime.minute;
-    if (this.minTime != null && isAtSameDay(this.minTime!, this.currentTime)) {
-      _currentMiddleIndex = this.currentTime.hour - this.minTime!.hour;
-      if (_currentMiddleIndex == 0) {
-        _currentRightIndex = this.currentTime.minute - this.minTime!.minute;
+    if (vacancyTime != null && isAtSameDay(currentTime, vacancyTime)) {
+      _currentLeftIndex = 0;
+      _currentMiddleIndex = 0;
+      _currentRightIndex = 0;
+    } else {
+      _currentLeftIndex = 0;
+      _currentMiddleIndex = this.currentTime.hour;
+      _currentRightIndex = this.currentTime.minute;
+      if (this.minTime != null && isAtSameDay(this.minTime!, this.currentTime)) {
+        _currentMiddleIndex = this.currentTime.hour - this.minTime!.hour;
+        if (_currentMiddleIndex == 0) {
+          _currentRightIndex = this.currentTime.minute - this.minTime!.minute;
+        }
       }
     }
   }
@@ -609,63 +627,120 @@ class DateTimePickerModel extends CommonPickerModel {
 
   @override
   String? leftStringAtIndex(int index) {
-    DateTime time = currentTime.add(Duration(days: index));
-    if (minTime != null &&
-        time.isBefore(minTime!) &&
-        !isAtSameDay(minTime!, time)) {
-      return null;
-    } else if (maxTime != null &&
-        time.isAfter(maxTime!) &&
-        !isAtSameDay(maxTime, time)) {
-      return null;
+    if (vacancyTime != null) {
+      DateTime time = currentTime.add(Duration(days: index));
+      if (isAtSameDay(time, vacancyTime)) {
+        return vacancyLab;
+      } else if (time.isBefore(vacancyTime!)) {
+        return null;
+      } else if (maxTime != null &&
+          time.isAfter(maxTime!) &&
+          !isAtSameDay(maxTime, time)) {
+        return null;
+      }
+      return formatDate(time, [ymdw], locale);
+    } else {
+      DateTime time = currentTime.add(Duration(days: index));
+      if (minTime != null &&
+          time.isBefore(minTime!) &&
+          !isAtSameDay(minTime!, time)) {
+        return null;
+      } else if (maxTime != null &&
+          time.isAfter(maxTime!) &&
+          !isAtSameDay(maxTime, time)) {
+        return null;
+      }
+      return formatDate(time, [ymdw], locale);
     }
-    return formatDate(time, [ymdw], locale);
   }
 
   @override
   String? middleStringAtIndex(int index) {
-    if (index >= 0 && index < 24) {
-      DateTime time = currentTime.add(Duration(days: _currentLeftIndex));
-      if (isAtSameDay(minTime, time)) {
-        if (index >= 0 && index < 24 - minTime!.hour) {
-          return digits(minTime!.hour + index, 2);
-        } else {
+    if (vacancyTime != null) {
+      if (index >= 0 && index < 24) {
+        DateTime time = currentTime.add(Duration(days: _currentLeftIndex));
+        if (isAtSameDay(time, vacancyTime)) {
           return null;
+        } else if (isAtSameDay(minTime, time)) {
+          if (index >= 0 && index < 24 - minTime!.hour) {
+            return digits(minTime!.hour + index, 2);
+          } else {
+            return null;
+          }
+        } else if (isAtSameDay(maxTime, time)) {
+          if (index >= 0 && index <= maxTime!.hour) {
+            return digits(index, 2);
+          } else {
+            return null;
+          }
         }
-      } else if (isAtSameDay(maxTime, time)) {
-        if (index >= 0 && index <= maxTime!.hour) {
-          return digits(index, 2);
-        } else {
-          return null;
-        }
+        return digits(index, 2);
       }
-      return digits(index, 2);
+    } else {
+      if (index >= 0 && index < 24) {
+        DateTime time = currentTime.add(Duration(days: _currentLeftIndex));
+        if (isAtSameDay(minTime, time)) {
+          if (index >= 0 && index < 24 - minTime!.hour) {
+            return digits(minTime!.hour + index, 2);
+          } else {
+            return null;
+          }
+        } else if (isAtSameDay(maxTime, time)) {
+          if (index >= 0 && index <= maxTime!.hour) {
+            return digits(index, 2);
+          } else {
+            return null;
+          }
+        }
+        return digits(index, 2);
+      }
     }
-
     return null;
   }
 
   @override
   String? rightStringAtIndex(int index) {
-    if (index >= 0 && index < 60) {
-      DateTime time = currentTime.add(Duration(days: _currentLeftIndex));
-      if (isAtSameDay(minTime, time) && _currentMiddleIndex == 0) {
-        if (index >= 0 && index < 60 - minTime!.minute) {
-          return digits(minTime!.minute + index, 2);
-        } else {
+    if (vacancyTime != null) {
+      if (index >= 0 && index < 60) {
+        DateTime time = currentTime.add(Duration(days: _currentLeftIndex));
+        if (isAtSameDay(time, vacancyTime)) {
           return null;
+        } else if (isAtSameDay(minTime, time) && _currentMiddleIndex == 0) {
+          if (index >= 0 && index < 60 - minTime!.minute) {
+            return digits(minTime!.minute + index, 2);
+          } else {
+            return null;
+          }
+        } else if (isAtSameDay(maxTime, time) &&
+            _currentMiddleIndex >= maxTime!.hour) {
+          if (index >= 0 && index <= maxTime!.minute) {
+            return digits(index, 2);
+          } else {
+            return null;
+          }
         }
-      } else if (isAtSameDay(maxTime, time) &&
-          _currentMiddleIndex >= maxTime!.hour) {
-        if (index >= 0 && index <= maxTime!.minute) {
-          return digits(index, 2);
-        } else {
-          return null;
-        }
+        return digits(index, 2);
       }
-      return digits(index, 2);
+    } else {
+      if (index >= 0 && index < 60) {
+        DateTime time = currentTime.add(Duration(days: _currentLeftIndex));
+        if (isAtSameDay(minTime, time) && _currentMiddleIndex == 0) {
+          if (index >= 0 && index < 60 - minTime!.minute) {
+            return digits(minTime!.minute + index, 2);
+          } else {
+            return null;
+          }
+        } else if (isAtSameDay(maxTime, time) &&
+            _currentMiddleIndex >= maxTime!.hour) {
+          if (index >= 0 && index <= maxTime!.minute) {
+            return digits(index, 2);
+          } else {
+            return null;
+          }
+        }
+        return digits(index, 2);
+      }
     }
-
     return null;
   }
 
